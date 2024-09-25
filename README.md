@@ -1,10 +1,3 @@
-> [!CAUTION]
-> The ActiveX version of the code uses an ActiveX control was used to achieve this ordering by loading **all**
-> messages in a forum and then ordering them correctly. This obviously results in poor performance once a forum starts
-> growing. The pure ASP version Subsequent versions include a "SortOrder" field for each message, meaning the messages
->  are sorted at DB query time, and paging / filtering can be included to drasticaally reduce recordset sizes and load.
->  **It is not recommended to use the ActiveX version of this code**.
-
 # The Code Project Discussion boards
 
 The Discussion board ASP scripts as used in The Code Project. This is an open source project for the Code Project community.
@@ -32,6 +25,13 @@ main work of organising the messages into a semblance of order. We would have lo
 commented the code heavily, and even provide a step by step on how the code works, but
 we simply haven't had the time, and decided that posting as-is is better than not posting at
 all. If you find bugs or make improvements, please send them in.
+
+> [!CAUTION]
+> The ActiveX version of the code uses an ActiveX control was used to achieve this ordering by loading **all**
+> messages in a forum and then ordering them correctly. This obviously results in poor performance once a forum starts
+> growing. The pure ASP version Subsequent versions include a "SortOrder" field for each message, meaning the messages
+>  are sorted at DB query time, and paging / filtering can be included to drasticaally reduce recordset sizes and load.
+>  **It is not recommended to use the ActiveX version of this code**.
 
 August 26, 2001 - [Philip Andrew](mailto:philip_andrew@hotmail.com) has supplied
 a [PHP version](/CodeProject-php-forum.zip) of the forums.
