@@ -1,0 +1,78 @@
+// AspForum.idl : IDL-Quellcode für AspForum.dll
+//
+
+// Diese Datei wird mit dem MIDL-Tool bearbeitet,
+// um den Quellcode für die Typbibliothek (AspForum.tlb)und die Abruffunktionen zu erzeugen.
+
+import "oaidl.idl";
+import "ocidl.idl";
+	[
+		object,
+		uuid(9BEA98F0-BAD6-11D3-A5C1-00105AEFABBE),
+		dual,
+		helpstring("IForum2-Schnittstelle"),
+		pointer_default(unique)
+	]
+	interface IForum2 : IDispatch
+	{
+		[id(1), helpstring("Method ReadArticles")] HRESULT ReadArticles(BSTR conn_str, BSTR id, BSTR pw);
+		[propget, id(2), helpstring("Property EndOfList")] HRESULT EndOfList([out, retval] BOOL *pVal);
+		[propget, id(3), helpstring("Property BeginOfList")] HRESULT BeginOfList([out, retval] BOOL *pVal);
+		[id(4), helpstring("Method MoveNext")] HRESULT MoveNext();
+		[propget, id(5), helpstring("Property GetCurID")] HRESULT GetCurID([out, retval] long *pVal);
+		[propget, id(6), helpstring("Property GetCurIndentLevel")] HRESULT GetCurIndentLevel([out, retval] long *pVal);
+		[propput, id(7), helpstring("Property ForumID")] HRESULT ForumID([in] long newVal);
+		[propget, id(8), helpstring("Property FilterStartDate")] HRESULT FilterStartDate([out, retval] BSTR *pVal);
+		[propput, id(8), helpstring("Property FilterStartDate")] HRESULT FilterStartDate([in] BSTR newVal);
+		[propget, id(9), helpstring("Property FilterEndDate")] HRESULT FilterEndDate([out, retval] BSTR *pVal);
+		[propput, id(9), helpstring("Property FilterEndDate")] HRESULT FilterEndDate([in] BSTR newVal);
+		[id(10), helpstring("Method DeleteID")] HRESULT DeleteID(long id, BOOL single);
+		[propput, id(11), helpstring("Property DbConnStr")] HRESULT DbConnStr([in] BSTR newVal);
+		[propput, id(12), helpstring("Property DbID")] HRESULT DbID([in] BSTR newVal);
+		[propput, id(13), helpstring("Property DbPW")] HRESULT DbPW([in] BSTR newVal);
+		[propget, id(14), helpstring("Property Value")] HRESULT Value(BSTR name, [out, retval] VARIANT *pVal);
+		[propput, id(14), helpstring("Property Value")] HRESULT Value(BSTR name, [in] VARIANT newVal);
+		[id(15), helpstring("Method FromUrl")] HRESULT FromUrl(BSTR url);
+		[propget, id(16), helpstring("Property ToUrl")] HRESULT ToUrl([out, retval] BSTR *pVal);
+		[propget, id(17), helpstring("Property ToUrlValue")] HRESULT ToUrlValue(BSTR name, VARIANT newVal, [out, retval] BSTR *pVal);
+		[propget, id(18), helpstring("Property ToUrlValue2")] HRESULT ToUrlValue2(BSTR name1, VARIANT value1, BSTR name2, VARIANT value2, [out, retval] BSTR *pVal);
+		[propget, id(19), helpstring("Eigenschaft FilterKeywords")] HRESULT FilterKeywords([out, retval] BSTR *pVal);
+		[propput, id(19), helpstring("Eigenschaft FilterKeywords")] HRESULT FilterKeywords([in] BSTR newVal);
+		[propget, id(20), helpstring("Eigenschaft DebugMode")] HRESULT DebugMode([out, retval] long *pVal);
+		[propput, id(20), helpstring("Eigenschaft DebugMode")] HRESULT DebugMode([in] long newVal);
+		[propget, id(21), helpstring("Eigenschaft RetrieveCount")] HRESULT RetrieveCount([out, retval] long *pVal);
+		[propput, id(21), helpstring("Eigenschaft RetrieveCount")] HRESULT RetrieveCount([in] long newVal);
+		[propget, id(22), helpstring("Eigenschaft RetrieveStart")] HRESULT RetrieveStart([out, retval] long *pVal);
+		[propput, id(22), helpstring("Eigenschaft RetrieveStart")] HRESULT RetrieveStart([in] long newVal);
+	};
+
+[
+	uuid(9BEA98E1-BAD6-11D3-A5C1-00105AEFABBE),
+	version(1.0),
+	helpstring("AspForum 1.0 Typbibliothek")
+]
+library ASPFORUMLib
+{
+	importlib("stdole32.tlb");
+	importlib("stdole2.tlb");
+
+	[
+		uuid(9BEA98F2-BAD6-11D3-A5C1-00105AEFABBE),
+		helpstring("_IForum2Ereignisschnittstelle")
+	]
+	dispinterface _IForum2Events
+	{
+		properties:
+		methods:
+	};
+
+	[
+		uuid(9BEA98F1-BAD6-11D3-A5C1-00105AEFABBE),
+		helpstring("Forum2 Class")
+	]
+	coclass Forum2
+	{
+		[default] interface IForum2;
+		[default, source] dispinterface _IForum2Events;
+	};
+};

@@ -1,0 +1,544 @@
+<%
+' ###########################################################################
+' #
+' # file:
+' # 	forum.inc
+' #
+' # description:
+' # 	forum related function.
+' #
+' # version:
+' # 	1.02  1999-12-15 Uwe Keim   createForum() added.
+' # 	1.01  1999-12-10 Uwe Keim   commented heavily.
+' # 	1.00  1999-12-08 Uwe Keim   file created.
+' #
+' ###########################################################################
+
+	   
+' ///////////////////////////////////////////////////////////////////////////
+' // helper class for forum.
+
+' this class is the main communication point that contains all forum-related
+' functionality. you never communicate with the forum-active-x directly, 
+' but always indirectly with this class.
+
+class Forum
+	' ---------------------------------------------
+	' uri functions.
+
+	' these functions should be used whenever you need a <a href="...">
+	' tag. instead of specifying an asp page and adding some cryptic
+	' parameters, you call one of these functions.
+	' with this approach, you can centralize the url-parameters
+	' in one place.
+	'
+	' you have to modify the asp filenames in the following functions,
+	' when you change the name of the real files.
+
+	' content page.
+	public function getUriNoContent
+		getUriNoContent = "nocontent.asp"
+	end function
+
+'reply.asp 
+	public function getUriReplyForum
+		getUriReplyForum = "reply.asp?" &toUrl
+	end function
+
+'reply.asp 
+	public function getUriSendReply
+		getUriSendReply = "insert_reply.asp?" &toUrl
+	end function
+
+'mail.asp 
+	public function getUriReplyAuthor
+		getUriReplyAuthor = "mail.asp?" &toUrl
+	end function
+
+'modify.asp  
+	' list page.
+	public function getUriModifyCurMsg( id )
+		getUriModifyCurMsg = "modify.asp?" & _
+			toUrlValue2("modify", id, "select",id)
+	end function
+
+'delete.asp
+	public function getUriDeleteCurMsg( id ) 
+		getUriDeleteCurMsg  = "delete.asp?" & _
+			toUrlValue2("delkind","one", "del",id)
+	end function
+
+'delete.asp
+public function getUriDeleteCurMsgSubs(id) 
+		getUriDeleteCurMsgSubs  = "delete.asp?" & _
+			toUrlValue2("delkind","branch", "del", id)
+	end function
+	
+'index.asp 
+	public function getUriSelectMsg(id)
+		getUriSelectMsg = "start.asp?" & _
+			toUrlValue("select",id)
+		appendAnchor getUriSelectMsg, id
+	end function
+
+'index.asp 
+	public function getUriListWithForum( forum_id )
+		
+		getUriListWithForum = "start.asp?"& _		
+			toUrlValue("forumid",forum_id)				
+		'traceX toUrlValue("forumid",forum_id)
+	end function
+
+'insert_reply.asp 
+	' reply page(s).
+	public function getUriInsertReply
+		getUriInsertReply = "reply.asp?" & toUrl
+	end function
+
+'failure.asp 
+	public function	getUriReplyError( err_text )
+		getUriReplyError = "failure.asp?err_txt=" & _
+			Server.UrlEncode( err_text )
+	end function
+
+'index.asp
+	public function getUriMain( article_id )
+		getUriMain = "start.asp?" &toUrl
+	appendAnchor getUriMain, article_id
+	end function
+
+'send_mail.asp 
+	' mail page(s).
+	public function getUriSendMail
+		getUriSendMail = "send_mail.asp?" & toUrl
+	end function
+
+'failure.asp 
+	public function	getUriMailError( err_text )
+		getUriMailError = "failure.asp?err_txt=" & _
+			Server.UrlEncode( err_text )
+	end function
+
+'insert_new.asp 
+	' new page(s).
+	public function getUriInsertNew
+		getUriInsertNew = "insert_new.asp?" & toUrl
+	end function
+
+'failure.asp 
+	public function	getUriNewError( err_text )
+		getUriNewError = "failure.asp?err_txt=" & _
+			Server.UrlEncode( err_text )
+	end function
+
+'insert_modify.asp 
+	' modify page(s).
+	public function getUriModify
+		getUriModify = "insert_modify.asp?" & toUrl
+	end function
+
+'failure.asp
+	public function	getUriModifyError( err_text )
+		getUriModifyError = "failure.asp?err_txt=" & _
+			Server.UrlEncode( err_text )
+	end function
+
+'new.asp 
+	' misc page(s).
+	public function getUriNew( forum_id )
+		getUriNew = "new.asp?" &_
+			toUrlValue("forumid",forum_id)
+	end function
+
+	' ---------------------------------------------
+	' faked constructor.
+
+	' always call this immediately after you created
+	' a new instance of this class.
+	public sub init()
+		
+		Set m_Dic = CreateObject("Scripting.Dictionary")
+		
+		'db connection
+		set m_conn = Server.CreateObject("ADODB.Connection")
+		m_conn.Open "Provider=Microsoft.Jet.OLEDB.4.0;" &_
+		"Persist Security Info=False;" &_
+		"Data Source=" &Server.MapPath("../database/forum.mdb")
+
+		' read in all parameters from the current page's url.
+		fromUrl( myselfComplete )
+	end sub
+
+	public sub readArticles( forum_id )
+		m_Dic.Item( "forumid" ) = forum_id
+	end sub
+
+	' ---------------------------------------------
+
+
+	' checks, whether the forum is currently in admin mode.
+	' in admin mode, you can modify and delete articles.
+	public function isInAdminMode()
+		isInAdminMode = false
+
+		if Request("ad")<>"" then
+			if CStr(Request("ad"))=CStr(ADMIN_PW) then
+				isInAdminMode = true
+			end if
+		end if
+	end function
+
+	' get the id of a forum from its short-name.
+	' returns null if not found.
+	' you may need to strengthen the sql query (the 'LIKE')
+	' when you have forums with similar names.
+	public function getForumId( forum_name )
+		dim rs
+		set rs = m_Conn.Execute( "SELECT * FROM Forum " & _
+			"WHERE Shortname LIKE '%" &forum_name& "%'" )
+
+		if not (rs.BOF and rs.EOF) then
+			getForumId = rs("ID")
+		else
+			getForumId = null
+		end if
+	end function
+
+	' creates a forum with a long name.
+	' returns the id of the forum.
+	' if the forum already exists, only its it
+	' is returned.
+	public function createForum( forum_long_name )
+		dim rs
+		set rs = m_Conn.Execute( "SELECT * FROM Forum " & _
+			"WHERE Name LIKE '%" &forum_long_name& "%'" )
+
+		if not (rs.BOF and rs.EOF) then
+			createForum = rs("ID")
+		else
+			rs.Close
+
+			set rs = Server.CreateObject("ADODB.Recordset")
+			rs.Open "Forum", m_Conn, 2, 3
+
+			rs.AddNew
+			rs("Name")        = forum_long_name
+			rs.Update
+			
+			createForum = rs("ID")
+		end if
+	end function
+
+	' returns the long name of a forum, given the id of a forum.
+	public function getForumName( forum_id )
+		dim rs
+		set rs = m_Conn.Execute( "SELECT * FROM Forum WHERE ID=" &forum_id )
+		getForumName = rs("Name")
+	end function
+
+	' gets the recordset of an article, given the id of the article.
+	public function getArticleRs( article_id )
+		set getArticleRs = m_Conn.Execute( _
+			"SELECT * FROM Article WHERE ID=" &article_id )
+	end function
+
+	' gets the recordset of a forum, given the id of the forum.
+	public function getForumRs( forum_id )
+		set getForumRs = m_Conn.Execute( _
+			"SELECT * FROM Forum WHERE ID=" &forum_id )
+	end function
+
+	' gets the recordset with all forums.
+	public function getForumsRs()
+		set getForumsRs = m_Conn.Execute( "SELECT * FROM Forum" )
+	end function
+
+	' insert a child-article for an already present article.
+	' set 'parent_id' to zero for inserting a root article
+	' for the given forum.
+	public function insertNew( parent_id, forum_id, subject, author_name, _
+		author_email, text, email_notify )
+
+		dim rs
+		set rs = Server.CreateObject("ADODB.Recordset")
+		rs.Open "Article", m_Conn, 2, 3
+
+		'------------------------------------------- 
+		'assortment of the entries:
+		'every entry has a position-number (position), which determines the assortment
+		'of the output. The most up-to-date entry of the first level gets the lowest number.
+		'The answer-entries get the first number of their parent`s position and, after a ".",
+		'the next number which is sorted ascending.
+		
+		dim sql_pos
+		dim rs_pos
+		dim sql_child
+		dim rs_child
+		dim position
+		dim last
+		dim x
+		dim indent
+
+			'if it is a parent entry
+			if parent_id = "0" then
+				sql_pos = "SELECT * FROM Article WHERE ForumID =" &forum_id& " ORDER BY [Position]"
+				set rs_pos = m_Conn.Execute(sql_pos) 
+				
+				if rs_pos.Eof then
+					position = "999999"
+				else
+					x = CLng(rs_pos("Position"))-1
+
+					'if there are more than 999999 entries
+					if x = 0 then x = 1
+
+					while Len(x) < 6
+						 x = "0" & x
+					wend
+					position = x
+				end if
+			indent = "0"
+
+			'if it is a child entry
+			else
+				sql_pos = "SELECT * FROM Article WHERE ID =" &parent_id
+				set rs_pos = m_Conn.Execute(sql_pos)
+
+
+				sql_child = "SELECT * FROM Article WHERE ParentID =" &parent_id& " ORDER BY Date DESC"
+				set rs_child = m_Conn.Execute(sql_child)
+				indent = CLng(rs_pos("Indent"))+1
+
+				'if there are no other childs
+				if (rs_child.Bof and rs_child.Eof) then
+					position = rs_pos("Position") & ".000001"
+
+				'if there are other childs
+				else
+					last = Right(rs_child("Position"), 6)
+
+					x = CStr(CLng(last)+1)
+					while Len(x) < 6
+						 x = "0" & x
+					wend
+					'if there are more than 999999 childs
+					if x > 999999 then x = 999999
+					position = rs_pos("Position") & "." & x
+				end if
+			end if
+			
+		'--------------------------------------------
+
+
+
+		'--------------------------------------------
+		'Database entry
+
+		rs.AddNew
+		rs("ParentID")    = parent_id
+		rs("ForumID")     = forum_id
+		rs("Subject")     = subject
+		rs("AuthorName")  = author_name
+		rs("AuthorEmail") = author_email
+		rs("Date")        = Now()
+		rs("Text")        = text
+		rs("Notify")      = email_notify
+		rs("Position")    = position
+		rs("Indent")      = indent
+		rs.Update
+
+		' mark the added article as selected.
+		m_Dic.Item("select") = rs("ID")
+
+		insertNew = rs("ID")
+		'---------------------------------------------
+	end function
+
+	' modifes an already present article.
+	public sub modifyArticle( article_id, subject, author_name, _
+		author_email, text, email_notify )
+
+		m_Conn.Execute "UPDATE Article SET " & _
+			"Article.Subject='" &subject& _
+			"',Article.AuthorName='" &author_name& _
+			"',Article.AuthorEmail='" &author_email& "',Article.Text='" &text& _
+			"',Article.Notify='" &email_notify& _
+			"' WHERE Article.ID=" &article_id
+		dim rs
+		set rs = Server.CreateObject("ADODB.Recordset")
+		rs.Open "Article", m_Conn, 2, 3
+	end sub
+
+	' returns the article-id of the article 
+	' at the current file pointer position.
+	'public function getCurID
+		'getCurID = "201"
+	'end function
+
+
+	' deletes an article and all its childs, given the 
+	' article id of this article.
+	public sub deleteArticle( article_id )
+
+	dim parent_position, forum_id
+	dim rs_p, sql_p
+	
+	sql_p = "SELECT * FROM Article WHERE ID ="&Request("del")
+	set rs_p = m_Conn.Execute(sql_p)
+
+	parent_position =	rs_p("Position")
+	forum_id =			Request("forumid")
+
+		m_conn.Execute "DELETE FROM Article WHERE [Position] LIKE '%"&parent_position&"%' AND ForumID ="&forum_id
+
+	end sub
+
+	
+	'--------------------------------------------------------------------------------
+	' build the internal map of name-value pairs from a given url.
+	function fromURL(url)
+
+		dim url_element
+
+		if InStr(url, "?") then
+			
+			url_element = split(url, "?")
+
+			'if the url has no parameters
+			if url_element(1) = "" then
+				exit function
+			'if the url has parameters
+			else
+				dim params
+				dim item
+				params = split(url_element(1), "&")
+				
+
+				dim x
+
+				For each x in params
+					if InStr(x, "=") then
+						item = split(x, "=")
+						
+						'add key-item to object
+						m_Dic.Add item(0), item(1)
+					end if
+				Next
+
+			end if
+		end if
+	 
+	end function
+	
+
+
+
+	'--------------------------------------------------------------------------------
+	' returns all values of the internal map url-encoded
+	' in the form "name=value&name=value&name=value&" etc.
+	' you can append this directly to an url.
+	
+	function toUrl
+		dim x,s,a,b
+		a = m_Dic.Keys
+		b = m_Dic.Items
+
+		For x = 0 To m_Dic.Count -1
+			s = s & a(x) & "=" & Server.URLEncode(b(x)) & "&"
+		Next
+		toUrl = s
+		
+	end function
+	
+
+	'--------------------------------------------------------------------------------
+	' the same as "toUrl" except that the value of the
+	' map-entry specified by "name" is replaced by "new_value".
+	function toUrlValue(key,new_item)
+		dim x,s,a,b
+
+		if not m_Dic.Exists(key)then
+			m_Dic.Add key, new_item
+		end if
+
+		a = m_Dic.Keys
+		b = m_Dic.Items
+
+		For x = 0 To m_Dic.Count -1
+			if a(x)=key then
+				s = s & a(x) & "=" & Server.URLEncode(new_item) & "&"
+			else
+				s = s & a(x) & "=" & Server.URLEncode(b(x)) & "&"
+			end if
+		Next
+
+		toUrlValue = s
+		
+	end function
+	
+
+	'--------------------------------------------------------------------------------
+	' the same as "toUrl" except that the value of the
+	' map-entry specified by "name1" is replaced by "new_value1" and
+	' the value of "name2" is replaced by "new_value2".
+	function toUrlValue2( key1, new_item1, key2, new_item2 )
+		dim x,s,a,b
+
+		if not m_Dic.Exists(key1)then
+			m_Dic.Add key1, new_item1
+		end if
+
+		if not m_Dic.Exists(key2) then
+			m_Dic.Add key2, new_item2
+		end if
+
+		a = m_Dic.Keys
+		b = m_Dic.Items
+
+		For x = 0 To m_Dic.Count -1
+			if a(x)=key1 then
+				s = s & a(x) & "=" & Server.URLEncode(new_item1) & "&"
+			elseif a(x)=key2 then
+				s = s & a(x) & "=" & Server.URLEncode(new_item2) & "&"
+			else
+				s = s & a(x) & "=" & Server.URLEncode(b(x)) & "&"
+			end if
+		Next
+		toUrlValue2 = s
+	end function
+
+	' ---------------------------------------------
+
+	' helper function. opens the database connection.
+	private function openDb()
+		set openDb = Server.CreateObject("ADODB.Connection")
+		openDb.Open DB, DB_ID, DB_PW
+	end function
+
+	' appends an anchor-link "#xxx" to an url.
+	private sub appendAnchor( byref url, anchor_name )
+
+		'-temp: exit until it works.
+		exit sub
+
+		' remove any '?' or '&' at the end.
+		while Len(url)>0 and _
+			(Right(url,1)="&" or Right(url,1)="?")
+			url = delete(url, Len(url), 1)
+		wend
+		
+		' append the anchor.
+		url = url& "#" &anchor_name
+	end sub
+
+	' ---------------------------------------------
+
+	public m_Conn		' the database-connection.
+	'private m_Ax		' the connection to the active-x object.
+	Private m_Dic		' scripting.dictionary
+end class
+
+
+' ***************************************************************************
+
+%>

@@ -1,0 +1,26 @@
+HKCR
+{
+	AspForum.Forum2.1 = s 'Forum2 Class'
+	{
+		CLSID = s '{9BEA98F1-BAD6-11D3-A5C1-00105AEFABBE}'
+	}
+	AspForum.Forum2 = s 'Forum2 Class'
+	{
+		CLSID = s '{9BEA98F1-BAD6-11D3-A5C1-00105AEFABBE}'
+		CurVer = s 'AspForum.Forum2.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {9BEA98F1-BAD6-11D3-A5C1-00105AEFABBE} = s 'Forum2 Class'
+		{
+			ProgID = s 'AspForum.Forum2.1'
+			VersionIndependentProgID = s 'AspForum.Forum2'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Both'
+			}
+			'TypeLib' = s '{9BEA98E1-BAD6-11D3-A5C1-00105AEFABBE}'
+		}
+	}
+}

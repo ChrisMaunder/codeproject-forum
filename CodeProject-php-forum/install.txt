@@ -1,0 +1,63 @@
+
+# 1) Run the following database script on your mysql database
+# 2) Change the config.inc file to point to the correct database with user name and password
+# 3) Go to index.php and it should work, new message and reply works at the moment
+# Note: you need a forum with name of 0
+
+# phpMyAdmin MySQL-Dump
+# http://phpwizard.net/phpMyAdmin/
+#
+# Host: localhost Database : forum
+
+# --------------------------------------------------------
+#
+# Table structure for table 'cparticle'
+#
+
+CREATE TABLE cparticle (
+   ID bigint(20) NOT NULL auto_increment,
+   ParentID bigint(20),
+   ForumID bigint(20),
+   Subject varchar(250),
+   AuthorName varchar(100),
+   AuthorEmail varchar(100),
+   Date datetime,
+   Text text,
+   Notify varchar(250),
+   Position varchar(250),
+   Indent int(11),
+   PRIMARY KEY (ID),
+   UNIQUE ID (ID)
+);
+
+#
+# Dumping data for table 'cparticle'
+#
+
+INSERT INTO cparticle VALUES ( '1', '0', '0', '1', '1', '1', '2001-08-21 08:50:10', '1', '', '999999', '1');
+INSERT INTO cparticle VALUES ( '2', '0', '0', 'two', 'two', 'two', '2001-08-21 08:50:25', 'two', '', '999998', '1');
+INSERT INTO cparticle VALUES ( '3', '2', '0', 'two.one', 'two.one', 'two.one', '2001-08-21 08:50:39', 'two.one', '', '999998.000001', '2');
+INSERT INTO cparticle VALUES ( '4', '3', '0', 'two.one.one', 'two.one.one', 'two.one.one', '2001-08-21 08:50:53', 'two.one.one', '', '999998.000001.000001', '3');
+INSERT INTO cparticle VALUES ( '5', '3', '0', 'two.one.two', 'two.one.two', 'two.one.two', '2001-08-21 08:51:04', 'two.one.two', '', '999998.000001.000002', '3');
+
+# --------------------------------------------------------
+#
+# Table structure for table 'cpforum'
+#
+
+CREATE TABLE cpforum (
+   ID bigint(20) DEFAULT '0' NOT NULL,
+   Shortname varchar(250),
+   Name varchar(250),
+   Description varchar(250),
+   PRIMARY KEY (ID),
+   UNIQUE ID (ID)
+);
+
+#
+# Dumping data for table 'cpforum'
+#
+
+INSERT INTO cpforum VALUES ( '0', 'main', 'main', 'main');
+
+
